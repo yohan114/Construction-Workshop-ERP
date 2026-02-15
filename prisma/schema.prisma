@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +10,1187 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ==================== ENUMS ====================
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  TECHNICIAN
+  STOREKEEPER
+  SUPERVISOR
+  OPERATOR
 }
 
-model Post {
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AssetStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  DISPOSED
+}
+
+enum ItemStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
+
+enum StoreStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ValuationMethod {
+  FIFO
+  LIFO
+  WEIGHTED_AVERAGE
+  STANDARD_COST
+}
+
+enum JobStatus {
+  CREATED
+  ASSIGNED
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CLOSED
+  CANCELLED
+}
+
+enum JobPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum JobType {
+  BREAKDOWN
+  PREVENTIVE
+  CORRECTIVE
+  INSPECTION
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ISSUED
+  PARTIAL
+  CANCELLED
+}
+
+enum ReturnStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  RETURN
+  ADJUSTMENT
+  TRANSFER
+}
+
+enum ItemCondition {
+  GOOD
+  DAMAGED
+  DEFECTIVE
+}
+
+enum CostType {
+  MATERIAL
+  LABOR
+  SERVICE
+  FUEL
+  OTHER
+}
+
+enum FuelIssueStatus {
+  PENDING
+  APPROVED
+  ISSUED
+  CANCELLED
+}
+
+enum AlertType {
+  ABNORMAL_CONSUMPTION
+  ZERO_CONSUMPTION
+  METER_ROLLBACK
+  SAFETY_VIOLATION
+  FRAUD_SUSPECTED
+  LOW_STOCK
+  COST_OVERRUN
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IntervalType {
+  HOURS
+  DAYS
+  KILOMETERS
+  MILES
+}
+
+enum DowntimeCategory {
+  BREAKDOWN
+  WAITING_PARTS
+  WAITING_LABOR
+  SUPPLY_CHAIN_DELAY
+  SCHEDULED_MAINTENANCE
+  WEATHER
+  OPERATOR_UNAVAILABLE
+  OTHER
+}
+
+enum RepairStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum GatePassType {
+  OUT
+  IN
+}
+
+// ==================== COMPANY ====================
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  status      String   @default("ACTIVE")
+  
+  // Audit columns
+  createdAt   DateTime @default(now())
+  createdBy   String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+  
+  // Relations
+  users        User[]
+  assets       Asset[]
+  items        Item[]
+  stores       Store[]
+  categories   Category[]
+  failureTypes FailureType[]
+  jobs         Job[]
+  
+  @@index([code])
+}
+
+// ==================== USER ====================
+
+model User {
+  id          String     @id @default(cuid())
+  companyId   String
+  email       String     @unique
+  name        String
+  role        UserRole   @default(USER)
+  status      UserStatus @default(ACTIVE)
+  hash        String     // Password hash
+  salt        String     // Password salt
+  pin         String?    // PIN for mobile login
+  deviceId    String?    // Registered device ID
+  hourlyRate  Float?     // Labor cost per hour
+  
+  // Audit columns
+  createdAt DateTime   @default(now())
+  createdBy String?
+  updatedAt DateTime   @updatedAt
+  updatedBy String?
+  
+  // Relations
+  company       Company        @relation(fields: [companyId], references: [id])
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  assignedJobs  Job[]          @relation("AssignedJobs")
+  createdJobs   Job[]          @relation("CreatedJobs")
+  itemRequests  ItemRequest[]
+  stockLedger   StockLedger[]
+  fuelIssues    FuelIssue[]
+  
+  @@index([companyId])
+  @@index([email])
+}
+
+// ==================== SESSION (for JWT refresh tokens) ====================
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+// ==================== ASSET ====================
+
+model Asset {
+  id           String      @id @default(cuid())
+  companyId    String
+  code         String
+  description  String
+  category     String?
+  status       AssetStatus @default(ACTIVE)
+  location     String?
+  value        Float?
+  purchaseDate DateTime?
+  qrCode       String?     // QR code for asset identification
+  
+  // Meter tracking for fuel/consumption
+  meterType    String?     // HOUR, KILOMETER, MILE, etc.
+  currentMeter Float?      @default(0)
+  lastMeterUpdate DateTime?
+  meterBroken  Boolean     @default(false)
+  
+  // Standard consumption rate (e.g., liters per hour, km per liter)
+  standardConsumptionRate Float? // Expected consumption rate
+  consumptionUnit String? // L/hr, km/L, etc.
+  
+  // Safety critical flag
+  safetyCritical Boolean   @default(false)
+  
+  // Audit columns
+  createdAt    DateTime    @default(now())
+  createdBy    String?
+  updatedAt    DateTime    @updatedAt
+  updatedBy    String?
+  
+  // Relations
+  company          Company         @relation(fields: [companyId], references: [id])
+  jobs             Job[]
+  fuelIssues       FuelIssue[]
+  pmSchedules      PMSchedule[]
+  meterReadings    MeterReading[]
+  downtimeLogs     DowntimeLog[]
+  externalRepairs  ExternalRepair[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([status])
+  @@index([qrCode])
+}
+
+// ==================== ITEM ====================
+
+model Item {
+  id               String          @id @default(cuid())
+  companyId        String
+  code             String
+  description      String
+  uom              String?         // Unit of Measure
+  category         String?
+  valuationMethod  ValuationMethod @default(WEIGHTED_AVERAGE)
+  status           ItemStatus      @default(ACTIVE)
+  unitPrice        Float?
+  minStock         Float?
+  maxStock         Float?
+  barcode          String?         // Item barcode
+  weightedAvgCost  Float?          // Current weighted average cost
+  
+  // Audit columns
+  createdAt        DateTime        @default(now())
+  createdBy        String?
+  updatedAt        DateTime        @updatedAt
+  updatedBy        String?
+  
+  // Relations
+  company          Company         @relation(fields: [companyId], references: [id])
+  stockLevels      ItemStock[]
+  requestLines     ItemRequestLine[]
+  stockLedger      StockLedger[]
+  returns          ItemReturn[]
+  costLogs         JobCostLog[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([status])
+  @@index([barcode])
+}
+
+// ==================== STORE ====================
+
+model Store {
+  id          String      @id @default(cuid())
+  companyId   String
+  name        String
+  code        String?
+  location    String?
+  status      StoreStatus @default(ACTIVE)
+  
+  // Audit columns
+  createdAt   DateTime    @default(now())
+  createdBy   String?
+  updatedAt   DateTime    @updatedAt
+  updatedBy   String?
+  
+  // Relations
+  company     Company     @relation(fields: [companyId], references: [id])
+  stockLevels ItemStock[]
+  requests    ItemRequest[]
+  fuelIssues  FuelIssue[]
+  
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+// ==================== CATEGORY (for Assets and Items) ====================
+
+model Category {
+  id             String   @id @default(cuid())
+  companyId      String
+  name           String
+  type           String   // ASSET or ITEM
+  description    String?
+  safetyCritical Boolean  @default(false) // For assets
+  
+  // Audit columns
+  createdAt   DateTime @default(now())
+  createdBy   String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+  
+  // Relations
+  company     Company  @relation(fields: [companyId], references: [id])
+  
+  @@unique([companyId, name, type])
+  @@index([companyId])
+}
+
+// ==================== FAILURE TYPE ====================
+
+model FailureType {
+  id             String   @id @default(cuid())
+  companyId      String
+  code           String
+  name           String
+  description    String?
+  safetyCritical Boolean  @default(false) // Requires safety photo
+  
+  // Audit columns
+  createdAt   DateTime @default(now())
+  createdBy   String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+  
+  // Relations
+  company     Company  @relation(fields: [companyId], references: [id])
+  jobs        Job[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+// ==================== JOB ====================
+
+model Job {
+  id             String     @id @default(cuid())
+  companyId      String
+  assetId        String
+  failureTypeId  String?
+  assignedToId   String?
+  createdById    String
+  pmScheduleId   String?    // Link to PM schedule if auto-generated
+
+  title          String
+  description    String
+  status         JobStatus   @default(CREATED)
+  priority       JobPriority @default(MEDIUM)
+  type           JobType     @default(BREAKDOWN)
+
+  // Timestamps
+  startedAt      DateTime?
+  pausedAt       DateTime?
+  completedAt    DateTime?
+  closedAt       DateTime?
+  totalPauseTime Int         @default(0) // Total pause time in seconds
+
+  // Photos (JSON array of URLs)
+  beforePhotos   String?
+  afterPhotos    String?
+  safetyPhotoUrl String?     // Mandatory for safety critical jobs
+
+  // Safety flag
+  safetyCritical Boolean     @default(false)
+  safetyPhotoRequired Boolean @default(false)
+
+  // Closure notes
+  closureNotes   String?
+
+  // Cost tracking (running totals for performance)
+  materialCost   Float       @default(0)
+  laborCost      Float       @default(0)
+  fuelCost       Float       @default(0)
+  totalCost      Float       @default(0)
+  costCalculatedAt DateTime?
+
+  // Sync status for offline
+  syncStatus     String      @default("SYNCED") // SYNCED, PENDING, FAILED
+  localId        String?     // Local ID from mobile device
+
+  // Soft delete
+  isVoid         Boolean     @default(false)
+  voidedAt       DateTime?
+  voidedById     String?
+  voidReason     String?
+
+  // Audit columns
+  createdAt      DateTime    @default(now())
+  createdBy      String?
+  updatedAt      DateTime    @updatedAt
+  updatedBy      String?
+
+  // Relations
+  company        Company     @relation(fields: [companyId], references: [id])
+  asset          Asset       @relation(fields: [assetId], references: [id])
+  failureType    FailureType? @relation(fields: [failureTypeId], references: [id])
+  assignedTo     User?       @relation("AssignedJobs", fields: [assignedToId], references: [id])
+  createdByUser  User        @relation("CreatedJobs", fields: [createdById], references: [id])
+  pmSchedule     PMSchedule? @relation(fields: [pmScheduleId], references: [id])
+  itemRequests   ItemRequest[]
+  costLogs       JobCostLog[]
+  costSnapshot   JobCostSnapshot?
+  fuelIssues     FuelIssue[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@index([pmScheduleId])
+}
+
+// ==================== ITEM STOCK (per store) ====================
+
+model ItemStock {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  itemId    String
+  storeId   String
+  quantity  Float    @default(0)
+  
+  // Audit columns
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // Relations
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  @@unique([itemId, storeId])
+  @@index([itemId])
+  @@index([storeId])
+}
+
+// ==================== ITEM REQUEST ====================
+
+model ItemRequest {
+  id             String        @id @default(cuid())
+  companyId      String
+  jobId          String
+  storeId        String
+  requestedById  String
+  
+  status         RequestStatus @default(PENDING)
+  rejectionReason String?
+  
+  // Approval
+  approvedById   String?
+  approvedAt     DateTime?
+  
+  // Issue confirmation
+  qrCode         String?       // QR code for technician to scan
+  qrExpiresAt    DateTime?
+  issuedAt       DateTime?
+  issuedById     String?
+  
+  // Receipt confirmation
+  receivedAt     DateTime?
+  receivedById   String?
+  
+  // Sync status for offline
+  syncStatus     String        @default("SYNCED")
+  localId        String?
+  
+  // Soft delete
+  isVoid         Boolean       @default(false)
+  voidedAt       DateTime?
+  voidedById     String?
+  
+  // Audit columns
+  createdAt      DateTime      @default(now())
+  createdBy      String?
+  updatedAt      DateTime      @updatedAt
+  updatedBy      String?
+  
+  // Relations
+  store          Store         @relation(fields: [storeId], references: [id])
+  job            Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  requestedBy    User          @relation(fields: [requestedById], references: [id])
+  lines          ItemRequestLine[]
+  
+  @@index([companyId])
+  @@index([jobId])
+  @@index([status])
+  @@index([qrCode])
+}
+
+// ==================== ITEM REQUEST LINE ====================
+
+model ItemRequestLine {
+  id            String   @id @default(cuid())
+  requestId     String
+  itemId        String
+  
+  requestedQty  Float
+  approvedQty   Float?
+  issuedQty     Float?   @default(0)
+  returnedQty   Float?   @default(0)
+  
+  // Cost capture at transaction time
+  unitCost      Float?   // Cost per unit at time of issue
+  totalCost     Float?   // issuedQty * unitCost
+  
+  // Audit columns
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  request       ItemRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  item          Item     @relation(fields: [itemId], references: [id])
+  
+  @@unique([requestId, itemId])
+  @@index([requestId])
+  @@index([itemId])
+}
+
+// ==================== STOCK LEDGER ====================
+
+model StockLedger {
+  id             String           @id @default(cuid())
+  itemId         String
+  storeId        String
+  
+  movementType   StockMovementType
+  quantity       Float
+  balanceAfter   Float            // Balance after this movement
+  
+  // Cost tracking
+  unitCost       Float?           // Cost per unit at this movement
+  totalValue     Float?           // Total value of movement
+  
+  referenceType  String?          // REQUEST, RETURN, ADJUSTMENT, FUEL
+  referenceId    String?          // ID of the request/return
+  
+  userId         String           // Who performed the action
+  
+  // Audit columns
+  createdAt      DateTime         @default(now())
+  
+  // Relations
+  item           Item             @relation(fields: [itemId], references: [id])
+  user           User             @relation(fields: [userId], references: [id])
+  
+  @@index([itemId])
+  @@index([storeId])
+  @@index([createdAt])
+}
+
+// ==================== ITEM RETURN ====================
+
+model ItemReturn {
+  id            String        @id @default(cuid())
+  companyId     String
+  jobId         String
+  storeId       String
+  requestLineId String?
+  itemId        String
+  
+  quantity      Float
+  condition     ItemCondition @default(GOOD)
+  notes         String?
+  status        ReturnStatus  @default(PENDING)
+  
+  // Cost tracking
+  unitCost      Float?        // Cost per unit at time of return
+  totalCredit   Float?        // quantity * unitCost (credit to job)
+  
+  // Who returned and who accepted
+  returnedById  String
+  acceptedById  String?
+  acceptedAt    DateTime?
+  
+  // Sync status for offline
+  syncStatus    String        @default("SYNCED")
+  localId       String?
+  
+  // Audit columns
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  item          Item          @relation(fields: [itemId], references: [id])
+  
+  @@index([companyId])
+  @@index([jobId])
+  @@index([status])
+}
+
+// ==================== JOB COST LOG ====================
+
+model JobCostLog {
+  id             String     @id @default(cuid())
+  jobId          String
+  companyId      String
+  
+  costType       CostType   // MATERIAL, LABOR, SERVICE, FUEL, OTHER
+  description    String
+  
+  // Amount (positive = debit/add cost, negative = credit/reduce cost)
+  amount         Float
+  
+  // Reference to the source transaction
+  referenceType  String?    // ISSUE, RETURN, LABOR, FUEL
+  referenceId    String?    // ID of the transaction
+  
+  // Item details (for material costs)
+  itemId         String?
+  quantity       Float?
+  unitCost       Float?
+  
+  // Running total after this entry
+  runningTotal   Float
+  
+  // Audit columns
+  createdAt      DateTime   @default(now())
+  createdBy      String?
+  
+  // Relations
+  job            Job        @relation(fields: [jobId], references: [id])
+  item           Item?      @relation(fields: [itemId], references: [id])
+  
+  @@index([jobId])
+  @@index([companyId])
+  @@index([costType])
+  @@index([createdAt])
+}
+
+// ==================== JOB COST SNAPSHOT (Immutable) ====================
+
+model JobCostSnapshot {
+  id             String   @id @default(cuid())
+  jobId          String   @unique
+  companyId      String
+  
+  // Cost breakdown
+  materialCost   Float    @default(0)
+  laborCost      Float    @default(0)
+  fuelCost       Float    @default(0)
+  serviceCost    Float    @default(0)
+  otherCost      Float    @default(0)
+  totalCost      Float    @default(0)
+  
+  // Labor details
+  laborHours     Float?
+  hourlyRate     Float?
+  
+  // Immutability hash
+  dataHash       String   // SHA-256 hash of the cost data
+  hashGeneratedAt DateTime @default(now())
+  
+  // Audit columns
+  createdAt      DateTime @default(now())
+  createdBy      String?
+  
+  // Relations
+  job            Job      @relation(fields: [jobId], references: [id])
+  
+  @@index([jobId])
+  @@index([companyId])
+}
+
+// ==================== FUEL ISSUE ====================
+
+model FuelIssue {
+  id                String           @id @default(cuid())
+  companyId         String
+  assetId           String
+  storeId           String
+  jobId             String?
+  issuedById        String
+  operatorId        String?          // Operator who received fuel
+  
+  // Meter reading (mandatory)
+  meterReading      Float            // Current meter reading
+  previousReading   Float?           // Previous reading for validation
+  meterValidated    Boolean          @default(true)
+  meterOverridePin  String?          // Supervisor PIN if override needed
+  meterPhotoUrl     String?          // Photo of meter
+  
+  // Fuel details
+  fuelType          String           // DIESEL, PETROL, etc.
+  quantityLiters    Float
+  unitPrice         Float?
+  totalCost         Float?
+  
+  // Consumption analysis
+  distanceHours     Float?           // Distance or hours since last fill
+  consumptionRate   Float?           // Calculated: distanceHours / quantityLiters
+  standardRate      Float?           // Expected rate for comparison
+  variancePercent   Float?           // Variance from standard
+  isAbnormal        Boolean          @default(false)
+  
+  // Broken meter handling
+  meterBroken       Boolean          @default(false)
+  dashboardPhotoUrl String?          // Required if meter broken
+  
+  status            FuelIssueStatus  @default(ISSUED)
+  
+  // Audit columns
+  createdAt         DateTime         @default(now())
+  createdBy         String?
+  updatedAt         DateTime         @updatedAt
+  updatedBy         String?
+  
+  // Relations
+  asset             Asset            @relation(fields: [assetId], references: [id])
+  store             Store            @relation(fields: [storeId], references: [id])
+  job               Job?             @relation(fields: [jobId], references: [id])
+  issuedBy          User             @relation(fields: [issuedById], references: [id])
+  
+  @@index([companyId])
+  @@index([assetId])
+  @@index([jobId])
+  @@index([createdAt])
+}
+
+// ==================== ALERT ====================
+
+model Alert {
+  id             String        @id @default(cuid())
+  companyId      String
+  
+  type           AlertType
+  severity       AlertSeverity
+  title          String
+  message        String
+  
+  // Reference to related entity
+  referenceType  String?       // FUEL_ISSUE, JOB, ASSET
+  referenceId    String?
+  
+  // Resolution
+  isResolved     Boolean       @default(false)
+  resolvedAt     DateTime?
+  resolvedById   String?
+  resolutionNotes String?
+  
+  // Audit columns
+  createdAt      DateTime      @default(now())
+  
+  @@index([companyId])
+  @@index([type])
+  @@index([severity])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+// ==================== DOCUMENT HASH (Integrity) ====================
+
+model DocumentHash {
+  id             String   @id @default(cuid())
+  documentType   String   // JOB_COST_SNAPSHOT, FUEL_ISSUE, etc.
+  documentId     String
+  dataHash       String   // SHA-256 hash
+  previousHash   String?  // For chain validation
+  
+  // Validation
+  isValid        Boolean  @default(true)
+  validatedAt    DateTime @default(now())
+  validationNote String?
+  
+  // Audit columns
+  createdAt      DateTime @default(now())
+  
+  @@unique([documentType, documentId])
+  @@index([documentType])
+  @@index([documentId])
+  @@index([isValid])
+}
+
+// ==================== NOTIFICATION ====================
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  message     String
+  type        String   // JOB_CREATED, JOB_ASSIGNED, REQUEST_PENDING, etc.
+  referenceId String?  // ID of related entity
+  isRead      Boolean  @default(false)
+  
+  // Audit columns
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ==================== AUDIT LOG ====================
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  action       String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, VOID
+  entity       String   // Table name
+  entityId     String?  // Record ID
+  oldValue     String?  // JSON string of old values
+  newValue     String?  // JSON string of new values
+  ipAddress    String?
+  userAgent    String?
+
+  // Audit columns
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+// ==================== PHASE 4: PREVENTIVE MAINTENANCE ====================
+
+// PM Schedule Configuration
+model PMSchedule {
+  id                String       @id @default(cuid())
+  companyId         String
+  assetId           String
+
+  // Interval configuration
+  intervalType      IntervalType // HOURS, DAYS, KILOMETERS, MILES
+  intervalValue     Float        // Service every X hours/days/km
+
+  // Tracking
+  lastServiceMeter  Float        @default(0)
+  lastServiceDate   DateTime?
+  nextDueMeter      Float        @default(0) // lastServiceMeter + intervalValue
+  nextDueDate       DateTime?
+
+  // Job template
+  jobTitleTemplate  String       // e.g., "PM Service - {asset_code}"
+  jobDescription    String?
+  estimatedDuration Float?       // Hours
+  priority          JobPriority  @default(MEDIUM)
+
+  // Status
+  isActive          Boolean      @default(true)
+
+  // Audit columns
+  createdAt         DateTime     @default(now())
+  createdBy         String?
+  updatedAt         DateTime     @updatedAt
+  updatedBy         String?
+
+  // Relations
+  asset             Asset        @relation(fields: [assetId], references: [id])
+  generatedJobs     Job[]
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([isActive])
+  @@index([nextDueDate])
+}
+
+// Meter Reading History
+model MeterReading {
+  id               String   @id @default(cuid())
+  companyId        String
+  assetId          String
+  jobId            String?
+
+  // Reading details
+  reading          Float
+  readingDate      DateTime @default(now())
+  effectiveDate    DateTime // User-provided date for PM calculation
+  isLateEntry      Boolean  @default(false) // Flag for back-dated entries
+
+  // Validation
+  previousReading  Float?
+  isRollback       Boolean  @default(false)
+  rollbackHandled  Boolean  @default(false)
+  overridePin      String?  // Supervisor PIN if override needed
+
+  // Evidence
+  photoUrl         String?
+  notes            String?
+
+  // Audit columns
+  createdAt        DateTime @default(now())
+  createdBy        String?
+
+  // Relations
+  asset            Asset    @relation(fields: [assetId], references: [id])
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([readingDate])
+  @@index([effectiveDate])
+}
+
+// ==================== PHASE 4: DOWNTIME TRACKING ====================
+
+// Downtime Event Log
+model DowntimeLog {
+  id              String           @id @default(cuid())
+  companyId       String
+  assetId         String
+  jobId           String?
+
+  // Timing
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationMinutes Int?             // Calculated when ended
+
+  // Categorization
+  category        DowntimeCategory @default(BREAKDOWN)
+  subCategory     String?          // More specific reason
+  notes           String?
+
+  // Cost impact
+  opportunityCostPerHour Float?
+  lostOpportunityCost    Float?    // duration * opportunityCostPerHour
+
+  // Resolution
+  resolvedBy      String?
+  resolvedAt      DateTime?
+
+  // Audit columns
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  asset           Asset            @relation(fields: [assetId], references: [id])
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([startedAt])
+  @@index([category])
+}
+
+// ==================== PHASE 4: MONTH-END LOCKING ====================
+
+// Period Lock for Finance
+model PeriodLock {
+  id             String   @id @default(cuid())
+  companyId      String
+
+  // Period
+  year           Int
+  month          Int      // 1-12
+
+  // Lock status
+  isLocked       Boolean  @default(false)
+  lockedAt       DateTime?
+  lockedById     String?
+
+  // Financial snapshot
+  totalMaterialCost  Float @default(0)
+  totalLaborCost     Float @default(0)
+  totalFuelCost      Float @default(0)
+  totalExternalCost  Float @default(0)
+  totalCost          Float @default(0)
+  jobsClosed         Int   @default(0)
+
+  // Audit columns
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([companyId, year, month])
+  @@index([companyId])
+  @@index([year, month])
+}
+
+// ==================== PHASE 4: EXTERNAL REPAIR ====================
+
+// External Repair / Vendor Job
+model ExternalRepair {
+  id              String        @id @default(cuid())
+  companyId       String
+  assetId         String
+  jobId           String?       // Link to internal job if any
+
+  // Vendor info
+  vendorName      String
+  vendorReference String?       // Vendor's job/invoice number
+  vendorContact   String?
+
+  // Gate Pass (Asset movement)
+  gatePassType    GatePassType  @default(OUT)
+  gatePassNumber  String?
+  sentOutAt       DateTime?
+  sentOutById     String?
+  expectedReturnAt DateTime?
+
+  // Return
+  receivedAt      DateTime?
+  receivedById    String?
+  conditionNotes  String?
+
+  // Cost
+  estimatedCost   Float?
+  actualCost      Float?
+  invoiceNumber   String?
+  invoiceDate     DateTime?
+  invoiceAmount   Float?
+  isPaid          Boolean       @default(false)
+  paidAt          DateTime?
+
+  // Status
+  status          RepairStatus  @default(PENDING)
+  completionNotes String?
+
+  // Audit columns
+  createdAt       DateTime      @default(now())
+  createdBy       String?
+  updatedAt       DateTime      @updatedAt
+  updatedBy       String?
+
+  // Relations
+  asset           Asset         @relation(fields: [assetId], references: [id])
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([status])
+  @@index([sentOutAt])
+}
+
+// ==================== PHASE 4: REPORTING AGGREGATES ====================
+
+// Daily Cost Aggregate (Materialized View)
+model DailyCostAggregate {
+  id              String   @id @default(cuid())
+  companyId       String
+
+  // Date
+  date            DateTime
+
+  // Dimensions
+  assetId         String?
+  costType        CostType
+
+  // Aggregates
+  totalAmount     Float    @default(0)
+  transactionCount Int    @default(0)
+
+  // Audit columns
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([companyId, date, assetId, costType])
+  @@index([companyId])
+  @@index([date])
+  @@index([assetId])
+}
+
+// System Log for centralized logging
+model SystemLog {
+  id            String   @id @default(cuid())
+  traceId       String   @unique
+  level         String   // DEBUG, INFO, WARN, ERROR, CRITICAL
+  category      String   // API, AUTH, DATABASE, BUSINESS, SYSTEM, SECURITY
+  message       String
+  
+  // Optional context
+  metadata      String?  // JSON
+  errorName     String?
+  errorMessage  String?
+  errorStack    String?
+  userId        String?
+  companyId     String?
+  ipAddress     String?
+  userAgent     String?
+  
+  createdAt     DateTime @default(now())
+
+  @@index([traceId])
+  @@index([level])
+  @@index([category])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([companyId])
+}
+
+// System Configuration (for maintenance mode, etc.)
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([key])
+}
+
+// Asset Availability Summary
+model AssetAvailability {
+  id                   String   @id @default(cuid())
+  companyId            String
+  assetId              String
+
+  // Period
+  year                 Int
+  month                Int
+
+  // Availability
+  totalCalendarHours   Float    @default(0)
+  availableHours       Float    @default(0)
+  downtimeHours        Float    @default(0)
+  availabilityPercent  Float    @default(0)
+
+  // Downtime breakdown
+  breakdownHours       Float    @default(0)
+  maintenanceHours     Float    @default(0)
+  waitingPartsHours    Float    @default(0)
+  otherDowntimeHours   Float    @default(0)
+
+  // Cost impact
+  opportunityCostPerHour Float?
+  lostOpportunityCost    Float  @default(0)
+
+  // Audit columns
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([companyId, assetId, year, month])
+  @@index([companyId])
+  @@index([assetId])
+  @@index([year, month])
 }
