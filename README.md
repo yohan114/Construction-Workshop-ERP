@@ -1,141 +1,271 @@
-# 🚀 Welcome to Z.ai Code Scaffold
+# Construction Workshop ERP System
 
-A modern, production-ready web application scaffold powered by cutting-edge technologies, designed to accelerate your development with [Z.ai](https://chat.z.ai)'s AI-powered coding assistance.
+A comprehensive Enterprise Resource Planning (ERP) system designed for construction workshop management. Built with Next.js 16, Prisma, and modern web technologies.
 
-## ✨ Technology Stack
+## 🚀 Features
 
-This scaffold provides a robust foundation built with:
+### Core Modules (Phase 1-3)
+- **Multi-Tenant Architecture** - Support for multiple companies with isolated data
+- **Authentication & Authorization** - JWT-based auth with role-based access control
+- **Asset Management** - Track equipment, machinery, and vehicles with QR codes
+- **Item Master** - Parts catalog with categorization and specifications
+- **Store Management** - Multi-location inventory tracking
+- **Job/Work Order Management** - Create, assign, and track maintenance jobs
+- **Item Requests** - Request parts with approval workflow
+- **Stock Management** - FIFO-based inventory with real-time tracking
+- **Parts Returns** - Process returned items efficiently
+- **Fuel Management** - Track fuel consumption and costs
+- **Safety Enforcement** - Alerts and compliance tracking
+- **Audit Logging** - Complete activity history
+- **Mobile App** - Technician interface with offline sync
 
-### 🎯 Core Framework
-- **⚡ Next.js 16** - The React framework for production with App Router
-- **📘 TypeScript 5** - Type-safe JavaScript for better developer experience
-- **🎨 Tailwind CSS 4** - Utility-first CSS framework for rapid UI development
+### Advanced Modules (Phase 4)
+- **Preventive Maintenance (PM) Engine** - Auto-schedule maintenance based on meter readings
+- **Downtime & Availability Tracking** - Monitor equipment availability with traffic light view
+- **MIS & Reporting** - Executive dashboard with KPIs and TCO reports
+- **External Repair Integration** - Gate pass management for outside repairs
 
-### 🧩 UI Components & Styling
-- **🧩 shadcn/ui** - High-quality, accessible components built on Radix UI
-- **🎯 Lucide React** - Beautiful & consistent icon library
-- **🌈 Framer Motion** - Production-ready motion library for React
-- **🎨 Next Themes** - Perfect dark mode in 2 lines of code
+### Production Ready Features
+- **Error Handling** - Trace ID-based error tracking
+- **Input Validation** - Comprehensive validators and sanitizers
+- **Maintenance Mode** - System-wide maintenance toggle
+- **Health Monitoring** - System health check endpoints
+- **Data Migration Tools** - Bulk import for Assets/Items/Users/Stock
 
-### 📋 Forms & Validation
-- **🎣 React Hook Form** - Performant forms with easy validation
-- **✅ Zod** - TypeScript-first schema validation
+## 📋 Requirements
 
-### 🔄 State Management & Data Fetching
-- **🐻 Zustand** - Simple, scalable state management
-- **🔄 TanStack Query** - Powerful data synchronization for React
-- **🌐 Fetch** - Promise-based HTTP request
+- **Node.js** >= 18.x or **Bun** >= 1.0
+- **SQLite** (included) or PostgreSQL/MySQL
 
-### 🗄️ Database & Backend
-- **🗄️ Prisma** - Next-generation TypeScript ORM
-- **🔐 NextAuth.js** - Complete open-source authentication solution
+## 🛠️ Installation
 
-### 🎨 Advanced UI Features
-- **📊 TanStack Table** - Headless UI for building tables and datagrids
-- **🖱️ DND Kit** - Modern drag and drop toolkit for React
-- **📊 Recharts** - Redefined chart library built with React and D3
-- **🖼️ Sharp** - High performance image processing
-
-### 🌍 Internationalization & Utilities
-- **🌍 Next Intl** - Internationalization library for Next.js
-- **📅 Date-fns** - Modern JavaScript date utility library
-- **🪝 ReactUse** - Collection of essential React hooks for modern development
-
-## 🎯 Why This Scaffold?
-
-- **🏎️ Fast Development** - Pre-configured tooling and best practices
-- **🎨 Beautiful UI** - Complete shadcn/ui component library with advanced interactions
-- **🔒 Type Safety** - Full TypeScript configuration with Zod validation
-- **📱 Responsive** - Mobile-first design principles with smooth animations
-- **🗄️ Database Ready** - Prisma ORM configured for rapid backend development
-- **🔐 Auth Included** - NextAuth.js for secure authentication flows
-- **📊 Data Visualization** - Charts, tables, and drag-and-drop functionality
-- **🌍 i18n Ready** - Multi-language support with Next Intl
-- **🚀 Production Ready** - Optimized build and deployment settings
-- **🤖 AI-Friendly** - Structured codebase perfect for AI assistance
-
-## 🚀 Quick Start
+### Quick Start
 
 ```bash
-# Install dependencies
+# Clone the repository
+git clone https://github.com/yohan114/Construction-Workshop-ERP.git
+cd Construction-Workshop-ERP
+
+# Install dependencies (using Bun - recommended)
 bun install
+
+# Setup database and seed test data
+bun run db:setup
 
 # Start development server
 bun run dev
-
-# Build for production
-bun run build
-
-# Start production server
-bun start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see your application running.
+### Using npm/yarn
 
-## 🤖 Powered by Z.ai
+```bash
+# Install dependencies
+npm install
+# or
+yarn install
 
-This scaffold is optimized for use with [Z.ai](https://chat.z.ai) - your AI assistant for:
+# Setup database
+npm run db:push
+npm run db:seed
 
-- **💻 Code Generation** - Generate components, pages, and features instantly
-- **🎨 UI Development** - Create beautiful interfaces with AI assistance  
-- **🔧 Bug Fixing** - Identify and resolve issues with intelligent suggestions
-- **📝 Documentation** - Auto-generate comprehensive documentation
-- **🚀 Optimization** - Performance improvements and best practices
+# Start development server
+npm run dev
+```
 
-Ready to build something amazing? Start chatting with Z.ai at [chat.z.ai](https://chat.z.ai) and experience the future of AI-powered development!
+## 📦 Dependencies
+
+### Core Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `next` | ^16.1.1 | React framework with App Router |
+| `react` | ^19.0.0 | UI library |
+| `prisma` | ^6.11.1 | ORM for database |
+| `@prisma/client` | ^6.11.1 | Prisma client |
+
+### UI Components (shadcn/ui + Radix)
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@radix-ui/react-*` | Various | Accessible UI primitives |
+| `lucide-react` | ^0.525.0 | Icon library |
+| `recharts` | ^2.15.4 | Charts and visualizations |
+| `framer-motion` | ^12.23.2 | Animations |
+| `class-variance-authority` | ^0.7.1 | Component variants |
+| `tailwind-merge` | ^3.3.1 | Tailwind class utilities |
+
+### State & Data Management
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `zustand` | ^5.0.6 | Client state management |
+| `@tanstack/react-query` | ^5.82.0 | Server state management |
+| `@tanstack/react-table` | ^8.21.3 | Data tables |
+
+### Forms & Validation
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `react-hook-form` | ^7.60.0 | Form handling |
+| `zod` | ^4.0.2 | Schema validation |
+| `@hookform/resolvers` | ^5.1.1 | Form resolvers |
+
+### Utilities
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `date-fns` | ^4.1.0 | Date utilities |
+| `uuid` | ^11.1.0 | UUID generation |
+| `next-themes` | ^0.4.6 | Theme management |
+| `sonner` | ^2.0.6 | Toast notifications |
+
+### Development Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `typescript` | ^5 | Type safety |
+| `tailwindcss` | ^4 | CSS framework |
+| `eslint` | ^9 | Code linting |
+| `bun-types` | ^1.3.4 | Bun type definitions |
+
+## 🔧 Available Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `dev` | `bun run dev` | Start development server on port 3000 |
+| `build` | `bun run build` | Build for production |
+| `start` | `bun run start` | Start production server |
+| `lint` | `bun run lint` | Run ESLint |
+| `db:push` | `bun run db:push` | Push schema to database |
+| `db:generate` | `bun run db:generate` | Generate Prisma client |
+| `db:migrate` | `bun run db:migrate` | Create and run migrations |
+| `db:reset` | `bun run db:reset` | Reset database |
+| `db:seed` | `bun run db:seed` | Seed test data |
+| `db:setup` | `bun run db:setup` | Push schema + seed data |
+
+## 👤 Test Accounts
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@example.com | admin123 |
+| Supervisor | supervisor@example.com | admin123 |
+| Technician | technician1@example.com | admin123 |
+| Storekeeper | storekeeper@example.com | admin123 |
 
 ## 📁 Project Structure
 
 ```
-src/
-├── app/                 # Next.js App Router pages
-├── components/          # Reusable React components
-│   └── ui/             # shadcn/ui components
-├── hooks/              # Custom React hooks
-└── lib/                # Utility functions and configurations
+├── prisma/
+│   ├── schema.prisma      # Database schema
+│   └── seed.ts            # Seed data script
+├── src/
+│   ├── app/               # Next.js App Router pages
+│   │   ├── api/           # API routes
+│   │   ├── assets/        # Asset management
+│   │   ├── jobs/          # Job management
+│   │   ├── pm/            # Preventive maintenance
+│   │   ├── reports/       # Reports
+│   │   └── ...
+│   ├── components/        # React components
+│   │   ├── ui/            # shadcn/ui components
+│   │   └── layout/        # Layout components
+│   ├── lib/               # Utility libraries
+│   │   ├── auth/          # Authentication
+│   │   ├── pm-engine.ts   # PM scheduling
+│   │   └── ...
+│   ├── contexts/          # React contexts
+│   └── hooks/             # Custom hooks
+├── db/                    # SQLite database files
+└── package.json
 ```
 
-## 🎨 Available Features & Components
+## 🔐 Environment Variables
 
-This scaffold includes a comprehensive set of modern web development tools:
+Create a `.env` file in the root directory:
 
-### 🧩 UI Components (shadcn/ui)
-- **Layout**: Card, Separator, Aspect Ratio, Resizable Panels
-- **Forms**: Input, Textarea, Select, Checkbox, Radio Group, Switch
-- **Feedback**: Alert, Toast (Sonner), Progress, Skeleton
-- **Navigation**: Breadcrumb, Menubar, Navigation Menu, Pagination
-- **Overlay**: Dialog, Sheet, Popover, Tooltip, Hover Card
-- **Data Display**: Badge, Avatar, Calendar
+```env
+# Database
+DATABASE_URL="file:./db/custom.db"
 
-### 📊 Advanced Data Features
-- **Tables**: Powerful data tables with sorting, filtering, pagination (TanStack Table)
-- **Charts**: Beautiful visualizations with Recharts
-- **Forms**: Type-safe forms with React Hook Form + Zod validation
+# JWT Secret (change in production!)
+JWT_SECRET="your-super-secret-key-change-in-production"
 
-### 🎨 Interactive Features
-- **Animations**: Smooth micro-interactions with Framer Motion
-- **Drag & Drop**: Modern drag-and-drop functionality with DND Kit
-- **Theme Switching**: Built-in dark/light mode support
+# App URL
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
 
-### 🔐 Backend Integration
-- **Authentication**: Ready-to-use auth flows with NextAuth.js
-- **Database**: Type-safe database operations with Prisma
-- **API Client**: HTTP requests with Fetch + TanStack Query
-- **State Management**: Simple and scalable with Zustand
+## 🌐 API Endpoints
 
-### 🌍 Production Features
-- **Internationalization**: Multi-language support with Next Intl
-- **Image Optimization**: Automatic image processing with Sharp
-- **Type Safety**: End-to-end TypeScript with Zod validation
-- **Essential Hooks**: 100+ useful React hooks with ReactUse for common patterns
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/refresh` - Refresh access token
+- `GET /api/auth/me` - Get current user
 
-## 🤝 Get Started with Z.ai
+### Assets
+- `GET /api/assets` - List assets
+- `POST /api/assets` - Create asset
+- `GET /api/assets/:id` - Get asset details
+- `PUT /api/assets/:id` - Update asset
+- `DELETE /api/assets/:id` - Delete asset
 
-1. **Clone this scaffold** to jumpstart your project
-2. **Visit [chat.z.ai](https://chat.z.ai)** to access your AI coding assistant
-3. **Start building** with intelligent code generation and assistance
-4. **Deploy with confidence** using the production-ready setup
+### Jobs
+- `GET /api/jobs` - List jobs
+- `POST /api/jobs` - Create job
+- `GET /api/jobs/:id` - Get job details
+- `PUT /api/jobs/:id` - Update job
+- `PATCH /api/jobs/:id/status` - Update job status
+- `POST /api/jobs/:id/cost` - Add cost entry
 
----
+### Stock
+- `GET /api/stock` - List stock
+- `POST /api/stock` - Add stock
+- `PATCH /api/stock` - Adjust stock
 
-Built with ❤️ for the developer community. Supercharged by [Z.ai](https://chat.z.ai) 🚀
+### Reports
+- `GET /api/reports` - Get various reports
+
+### System
+- `GET /api/system/health` - Health check
+- `GET /api/system/maintenance` - Maintenance status
+- `POST /api/system/import` - Bulk data import
+
+## 📱 Mobile App
+
+Access the mobile technician interface at `/mobile`:
+- View assigned jobs
+- Request parts
+- Update job status
+- Scan QR codes
+- Offline support
+
+## 🏗️ Database Schema
+
+Key models:
+- **Company** - Multi-tenant support
+- **User** - Users with roles (ADMIN, MANAGER, SUPERVISOR, TECHNICIAN, STOREKEEPER)
+- **Asset** - Equipment and machinery
+- **Item** - Parts and consumables
+- **Store** - Storage locations
+- **Stock** - Inventory tracking
+- **Job** - Work orders
+- **ItemRequest** - Parts requests
+- **PMSchedule** - Preventive maintenance schedules
+- **DowntimeLog** - Equipment downtime records
+- **ExternalRepair** - Outside repair tracking
+
+## 📄 License
+
+MIT License
+
+## 👥 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📞 Support
+
+For support, please open an issue on GitHub.
