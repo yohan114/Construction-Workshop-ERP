@@ -29,6 +29,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const refreshAuth = useCallback(async () => {
+    // Check if we have any cookies before making the request
+    const hasAccessToken = typeof document !== 'undefined' && 
+      document.cookie.includes('accessToken=');
+    
+    if (!hasAccessToken) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/auth/me', {
         method: 'GET',
